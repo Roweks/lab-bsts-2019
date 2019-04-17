@@ -27,7 +27,7 @@ public class SimpleBST<K, V> implements SimpleMap<K, V> {
    * The size of the tree.
    */
   int size;
-  
+
   /**
    * A cached value (useful in some circumstances.
    */
@@ -61,8 +61,11 @@ public class SimpleBST<K, V> implements SimpleMap<K, V> {
 
   @Override
   public V set(K key, V value) {
-    // TODO Auto-generated method stub
-    return null;
+    if (key == null) {
+      throw new NullPointerException("Cannot set a value to a null key.");
+    } // if you try using a null key
+    root = set(key, value, root);
+    return cachedValue;
   } // set(K,V)
 
   @Override
@@ -137,8 +140,10 @@ public class SimpleBST<K, V> implements SimpleMap<K, V> {
 
   @Override
   public void forEach(BiConsumer<? super K, ? super V> action) {
-    // TODO Auto-generated method stub
-
+    if (root == null) {
+      throw new NullPointerException("Cannot apply a function to no pairs.");
+    } // if there are no pairs
+    root = forEach(action, root);
   } // forEach
 
   // +----------------------+----------------------------------------
@@ -171,23 +176,65 @@ public class SimpleBST<K, V> implements SimpleMap<K, V> {
       } // if has children
     } // else
   } // dump
-  
+
   /**
-   * Get the value associated with a key in a subtree rooted at node.  See the
-   * top-level get for more details.
+   * Apply a function to each key/value pair.
    */
-  V get(K key, BSTNode<K,V> node) {
+  BSTNode<K, V> forEach(BiConsumer<? super K, ? super V> action, BSTNode<K, V> node) {
+    if (node == null) {
+      return node;
+    } // if we reached the bottom of the tree
+    node.left = forEach(action, node.left);
+    action.accept(node.key, node.value);
+    node.right = forEach(action, node.right);
+    return node;
+  } // forEach(BiConsumer<? super K, ? super V>, BSTNode<K, V>)
+
+  /**
+   * Set the value associated with key in a modified subtree that is returned.
+   */
+  BSTNode<K, V> set(K key, V value, BSTNode<K, V> node) {
+    if (node == null) {
+      cachedValue = null;
+      BSTNode<K, V> newNode = new BSTNode<K, V>(key, value);
+      size++;
+      return newNode;
+    } // if the node is null
+    int comp = comparator.compare(key, node.key);
+    // don't forget this might have to be else if
+    if (comp == 0) {
+      cachedValue = node.value;
+      node.value = value;
+      return node;
+    } // if we found the right key
+    else if (comp < 0) {
+      node.left = set(key, value, node.left);
+      return node;
+    } // else if we're on a larger key
+    else {
+      node.right = set(key, value, node.right);
+      return node;
+    } // else we're on a smaller key
+  } // set(K, V, BSTNode<K, V>)
+
+  /**
+   * Get the value associated with a key in a subtree rooted at node. See the top-level get for more
+   * details.
+   */
+  V get(K key, BSTNode<K, V> node) {
     if (node == null) {
       throw new IndexOutOfBoundsException("Invalid key: " + key);
-    }
+    } // if we got to the bottom without finding it
     int comp = comparator.compare(key, node.key);
     if (comp == 0) {
       return node.value;
-    } else if (comp < 0) {
+    } // if we found the right key
+    else if (comp < 0) {
       return get(key, node.left);
-    } else {
+    } // else if we're on a larger key
+    else {
       return get(key, node.right);
-    }
+    } // else we're on a smaller key
   } // get(K, BSTNode<K,V>)
 
   /**
